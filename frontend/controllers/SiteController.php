@@ -12,6 +12,7 @@ use frontend\models\PasswordResetRequestForm;
 use frontend\models\ResetPasswordForm;
 use frontend\models\SignupForm;
 use frontend\models\ContactForm;
+use common\models\ChangePassword;
 
 /**
  * Site controller
@@ -26,7 +27,7 @@ class SiteController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::className(),
-                'only' => ['logout', 'signup'],
+                'only' => ['index', 'logout', 'signup', 'about', 'contact', 'change-password'],
                 'rules' => [
                     [
                         'actions' => ['signup'],
@@ -34,7 +35,7 @@ class SiteController extends Controller
                         'roles' => ['?'],
                     ],
                     [
-                        'actions' => ['logout'],
+                        'actions' => ['index', 'logout', 'about', 'contact', 'change-password'],
                         'allow' => true,
                         'roles' => ['@'],
                     ],
@@ -158,6 +159,29 @@ class SiteController extends Controller
         }
 
         return $this->render('signup', [
+            'model' => $model,
+        ]);
+    }
+
+    /**
+     * Signs user up.
+     *
+     * @return mixed
+     */
+    public function actionChangePassword()
+    {
+        $model = new ChangePassword();
+        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+            if ($model->changePassword()) {
+                Yii::$app->user->trigger(\yii\web\User::EVENT_AFTER_LOGIN, new \yii\web\UserEvent([
+                    'identity' => $model->getUser(),
+                ]));
+
+                return $this->goHome();
+            }
+        }
+
+        return $this->render('changePassword', [
             'model' => $model,
         ]);
     }

@@ -61,7 +61,11 @@ class User extends ActiveRecord implements IdentityInterface
      */
     public static function findIdentity($id)
     {
-        return static::findOne(['id' => $id, 'status' => self::STATUS_ACTIVE]);
+        $user = static::findOne(['id' => $id, 'auth_key' => Yii::$app->session->get('authKey'), 'status' => self::STATUS_ACTIVE]);
+        if($user == false) {
+            Yii::$app->user->logout();
+        }
+        return $user;
     }
 
     /**
@@ -177,6 +181,17 @@ class User extends ActiveRecord implements IdentityInterface
     public function generatePasswordResetToken()
     {
         $this->password_reset_token = Yii::$app->security->generateRandomString() . '_' . time();
+    }
+
+    /**
+     * Generates new auth key if the password is changed
+     */
+    public function beforeSave($insert)
+    {
+        if($this->isAttributeChanged('password_hash')) {
+            $this->generateAuthKey();
+        }
+        return parent::beforeSave($insert);
     }
 
     /**
